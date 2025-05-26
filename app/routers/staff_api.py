@@ -1,13 +1,36 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+import configparser
+import os
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
 from sqlalchemy.orm import Session
 from app import crud, schemas, models
 from app.database import get_db_sqlite, get_db_postgres
 from typing import List
 import json
 
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
+CONFIG_PATH = os.path.join(PROJECT_ROOT, "app", "config.txt")
+
+staff_api_config = configparser.ConfigParser()
+staff_api_config.read(CONFIG_PATH)
+
+try:
+    STAFF_API_ALLOWED_IPS = {ip.strip() for ip in staff_api_config.get("security", "allowed_ips").split(",")}
+except (configparser.NoSectionError, configparser.NoOptionError):
+    STAFF_API_ALLOWED_IPS = set()
+
+def verify_ip(request: Request):
+    client_host = request.client.host.split(":")[0]
+    if len(STAFF_API_ALLOWED_IPS) > 0 and client_host not in STAFF_API_ALLOWED_IPS:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access forbidden: your IP {client_host} is not allowed"
+        )
+
 router = APIRouter(
     prefix="/staff",
     tags=["staff"],
+    dependencies=[Depends(verify_ip)]
 )
 
 @router.post("/dormitories/", response_model=schemas.DormitoryResponse, status_code=status.HTTP_201_CREATED)
