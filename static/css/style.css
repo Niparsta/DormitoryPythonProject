@@ -1,0 +1,49 @@
+body {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    background-color: #f8f9fa;
+}
+
+.result-box {
+    white-space: pre-wrap;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.table th {
+    background-color: #e9ecef;
+}
+
+.card-dormitory .card-header {
+    font-weight: bold;
+}
+
+.room-occupancy-low { }
+.room-occupancy-medium { }
+.room-occupancy-high { }
+.room-occupancy-full {
+    font-weight: bold;
+}
+
+.progress-bar-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    line-height: 20px;
+    color: #fff;
+    font-weight: bold;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body > .container-fluid {
+    min-height: 100vh;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Модуль управления заселением в общежитие: портал для сотрудников</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .progress-bar-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .status-pending { color: #6c757d; font-weight: bold; }
+        .status-approved { color: #198754; font-weight: bold; }
+        .status-rejected { color: #dc3545; font-weight: bold; }
+        .status-allocated { color: #0d6efd; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <header class="bg-dark text-white p-4 rounded-top shadow-sm mb-4">
+            <h1 class="display-6"><i class="bi bi-building-gear"></i> Модуль управления заселением в общежитие: портал для сотрудников</h1>
+        </header>
+
+        <ul class="nav nav-tabs mb-3" id="staffTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dorms-tab" data-bs-toggle="tab" data-bs-target="#dorms-tab-pane" type="button" role="tab" aria-controls="dorms-tab-pane" aria-selected="true">
+                    <i class="bi bi-buildings-fill"></i> Общежития
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="applications-tab" data-bs-toggle="tab" data-bs-target="#applications-tab-pane" type="button" role="tab" aria-controls="applications-tab-pane" aria-selected="false">
+                    <i class="bi bi-card-list"></i> Заявления
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="structure-io-tab" data-bs-toggle="tab" data-bs-target="#structure-io-tab-pane" type="button" role="tab" aria-controls="structure-io-tab-pane" aria-selected="false">
+                    <i class="bi bi-file-earmark-arrow-down-fill"></i> Экспорт и импорт структуры общежитий
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="staffTabContent">
+            <div class="tab-pane fade show active p-3 border bg-light rounded-bottom" id="dorms-tab-pane" role="tabpanel" aria-labelledby="dorms-tab" tabindex="0">
+                <h2 class="h4 mb-3">Управление общежитиями и их структурой</h2>
+                <div class="row">
+                    <div class="col-md-8">
+                        <h3><i class="bi bi-list-ul"></i> Список общежитий и их загруженность</h3>
+                        <button id="refreshDormListBtn" class="btn btn-sm btn-outline-secondary mb-2"><i class="bi bi-arrow-clockwise"></i> Обновить список</button>
+                        <div id="currentDormitoriesList" class="row row-cols-1 row-cols-md-2 g-4">
+                            <div class="col placeholder-glow"><span class="placeholder col-12 placeholder-lg"></span></div>
+                            <div class="col placeholder-glow"><span class="placeholder col-12 placeholder-lg"></span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="sticky-top" style="top: 20px;">
+                            <div class="card shadow-sm mb-3">
+                                <div class="card-header">
+                                    <h3 class="h5 mb-0"><i class="bi bi-plus-circle-fill"></i> Добавить общежитие</h3>
+                                </div>
+                                <div class="card-body">
+                                    <form id="addDormitoryForm">
+                                        <div class="mb-3">
+                                            <label for="dormName" class="form-label">Название:</label>
+                                            <input type="text" class="form-control form-control-sm" id="dormName" placeholder="Общежитие №X" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="dormAddress" class="form-label">Адрес:</label>
+                                            <input type="text" class="form-control form-control-sm" id="dormAddress" placeholder="ул. Примерная, д.1" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm w-100">Добавить</button>
+                                    </form>
+                                    <div id="addDormitoryResult" class="mt-2"></div>
+                                </div>
+                            </div>
+
+                            <div class="card shadow-sm">
+                                <div class="card-header">
+                                    <h3 class="h5 mb-0"><i class="bi bi-diagram-3-fill"></i> Задать структуру комнат общежития</h3>
+                                </div>
+                                <div class="card-body">
+                                    <form id="defineStructureForm">
+                                        <div class="mb-3">
+                                            <label for="structureDormId" class="form-label">Выберите общежитие:</label>
+                                            <select id="structureDormId" class="form-select form-select-sm" required>
+                                                <option value="">-- Сначала загрузите список --</option>
+                                            </select>
+                                            <button type="button" id="loadDormsForStructure" class="btn btn-outline-info btn-sm mt-1 w-100">Обновить список</button>
+                                        </div>
+                                        <p class="small text-muted">Добавьте комнаты. Это перезапишет существующую структуру комнат для выбранного общежития.</p>
+                                        <div id="roomsContainer" class="mb-2" style="max-height: 200px; overflow-y: auto;"></div>
+                                        <button type="button" id="addRoomField" class="btn btn-secondary btn-sm mb-2"><i class="bi bi-plus-lg"></i> Добавить комнату</button>
+                                        <button type="submit" class="btn btn-success btn-sm w-100">Сохранить структуру</button>
+                                    </form>
+                                    <div id="defineStructureResult" class="mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade" id="allocateRoomModal" tabindex="-1" aria-labelledby="allocateModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="allocateModalLabel">Изменить место заселения</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="allocateRoomResult" class="mb-3"></div>
+                            <p>Выберите новую комнату для студента:</p>
+                            <div id="availableRoomsList">
+                                <div class="alert alert-info">Загрузка доступных комнат...</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="button" class="btn btn-primary" id="confirmAllocateRoomBtn">Подтвердить заселение</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade" id="dormDetailsModal" tabindex="-1" aria-labelledby="dormDetailsModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="dormDetailsModalLabel">Детали общежития</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="dormDetailsContent">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade p-3 border bg-light rounded-bottom" id="applications-tab-pane" role="tabpanel" aria-labelledby="applications-tab" tabindex="0">
+                <h2 class="h4 mb-3">Управление заявлениями</h2>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <button id="viewApplicationsBtn" class="btn btn-primary"><i class="bi bi-arrow-clockwise"></i> Обновить таблицу с заявлениями</button>
+                    <button id="processApplicationsBtn" class="btn btn-warning"><i class="bi bi-person-check-fill"></i> Проверить возможность заселения для принятых заявлений</button>
+                </div>
+                <div id="processResult" class="mb-3"></div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Номер заявления</th>
+                                <th scope="col">Студент</th>
+                                <th scope="col">Студенческий билет</th>
+                                <th scope="col">Дата подачи</th>
+                                <th scope="col">Статус</th>
+                                <th scope="col">Место заселения</th>
+                                <th scope="col">Причина/Комментарий</th>
+                            </tr>
+                        </thead>
+                        <tbody id="applicationsTableBody">
+                            <tr><td colspan="7" class="text-center placeholder-glow"><span class="placeholder col-12"></span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <hr class="my-4">
+                <h3 class="h5">Изменить статус заявления вручную</h3>
+                <form id="updateStatusForm" class="row g-3 align-items-end">
+                    <div class="col-md-2">
+                        <label for="appIdUpdate" class="form-label">Номер заявления:</label>
+                        <input type="number" class="form-control form-control-sm" id="appIdUpdate" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="newStatus" class="form-label">Новый статус:</label>
+                        <select id="newStatus" class="form-select form-select-sm">
+                            <option value="pending">Принято</option>
+                            <option value="approved">Одобрено</option>
+                            <option value="rejected">Отклонено</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label for="rejectionReason" class="form-label">Причина/Комментарий (обязательно для статуса «Отклонено»):</label>
+                        <input type="text" class="form-control form-control-sm" id="rejectionReason">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-success btn-sm w-100">Обновить</button>
+                    </div>
+                </form>
+                <div id="updateStatusResult" class="mt-3"></div>
+            </div>
+            <div class="tab-pane fade p-3 border bg-light rounded-bottom" id="structure-io-tab-pane" role="tabpanel" aria-labelledby="structure-io-tab" tabindex="0">
+                <h2 class="h4 mb-3">Экспорт и импорт структуры общежитий</h2>
+                <p class="text-muted">Экспорт текущей структуры (названия, адреса, комнаты) в JSON. Импорт перезаписывает структуру совпадающих по имени общежитий и добавляет новые.</p>
+                <div class="row">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <h3 class="h5">Экспорт</h3>
+                        <button id="exportStructureBtn" class="btn btn-info w-100"><i class="bi bi-box-arrow-down"></i> Экспортировать структуру в JSON</button>
+                        <a id="downloadLink" style="display:none;"></a>
+                        <div id="exportResult" class="mt-2"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <h3 class="h5">Импорт</h3>
+                        <form id="importStructureForm">
+                            <div class="mb-3">
+                                <label for="importFile" class="form-label">Выберите JSON файл для импорта:</label>
+                                <input type="file" class="form-control" id="importFile" accept=".json" required>
+                            </div>
+                            <button type="submit" class="btn btn-warning w-100"><i class="bi bi-box-arrow-up"></i> Импортировать</button>
+                        </form>
+                        <div id="importResult" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="/static/js/staff_app.js"></script>
+</body>
+</html>

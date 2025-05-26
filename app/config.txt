@@ -1,0 +1,12 @@
+[sqlite]
+database_name = dormitory.db
+
+[postgres]
+username = *
+password = *
+host = *
+port = 5432
+database = *
+
+[security]
+allowed_ips = *, *
