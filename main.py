@@ -32,7 +32,7 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 app.include_router(student_api.router)
 app.include_router(staff_api.router)
 
-CONFIG_PATH = os.path.join(CURRENT_DIR, "config.txt")
+CONFIG_PATH = os.path.join(CURRENT_DIR, "app/config.txt")
 config = configparser.ConfigParser()
 config.read(CONFIG_PATH)
 
@@ -63,5 +63,11 @@ async def staff_portal(request: Request):
     return templates.TemplateResponse("staff_portal.html", {"request": request})
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+        import uvicorn
+        uvicorn.run(
+                "main:app",
+                host="0.0.0.0",
+                port=8443,
+                ssl_keyfile="key.pem",
+                ssl_certfile="cert.pem"
+        )
